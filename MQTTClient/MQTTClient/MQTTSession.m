@@ -29,7 +29,7 @@
 #import "MQTTDecoder.h"
 #import "MQTTEncoder.h"
 #import "MQTTMessage.h"
-#import "SRWebSocket.h"
+#import <SocketRocket/SRWebSocket.h>
 
 #import <CFNetwork/CFSocketStream.h>
 
