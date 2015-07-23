@@ -19,7 +19,7 @@
 
 #import <Foundation/Foundation.h>
 #import "MQTTMessage.h"
-#import <SocketRocket/SRSocket.h>
+#import <SocketRocket/SRWebSocket.h>
 
 typedef enum {
     MQTTDecoderEventProtocolError,
