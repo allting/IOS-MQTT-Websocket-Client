@@ -420,12 +420,12 @@
     [self.websocket open];
     
     //wait for 3 seconds
-    int connectEmergencyBrake = 0;
-    while (self.synchronWSConnect && connectEmergencyBrake < 30) {
-        if (DEBUGSESS) NSLog(@"%@ waiting for connect", self);
-        [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:.1]];
-        connectEmergencyBrake++;
-    }
+//    int connectEmergencyBrake = 0;
+//    while (self.synchronWSConnect && connectEmergencyBrake < 30) {
+//        if (DEBUGSESS) NSLog(@"%@ waiting for connect", self);
+//        [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:.1]];
+//        connectEmergencyBrake++;
+//    }
     
     self.encoder = [[MQTTEncoder alloc] initWithWebSocket:self.websocket
                                                   runLoop:self.runLoop
@@ -438,16 +438,16 @@
     self.encoder.delegate = self;
     self.decoder.delegate = self;
     
-    [self.encoder open];
-    [self.decoder open];
+//    [self.encoder open];
+//    [self.decoder open];
     
-    if(connectEmergencyBrake >= 30 && self.synchronWSConnect){
-        NSDictionary *errorDictionary = @{ NSLocalizedDescriptionKey : @"Connection creation timeout" };
-        
-        NSError *anError = [[NSError alloc] initWithDomain:@"WSConnection"
-                                                      code:1000 userInfo:errorDictionary];
-        [self webSocket:self.websocket didFailWithError:anError];
-    }
+//    if(connectEmergencyBrake >= 30 && self.synchronWSConnect){
+//        NSDictionary *errorDictionary = @{ NSLocalizedDescriptionKey : @"Connection creation timeout" };
+//        
+//        NSError *anError = [[NSError alloc] initWithDomain:@"WSConnection"
+//                                                      code:1000 userInfo:errorDictionary];
+//        [self webSocket:self.websocket didFailWithError:anError];
+//    }
 }
 
 - (void)connectToHost:(NSString*)ip port:(UInt32)port {
@@ -1341,6 +1341,9 @@
 - (void)webSocketDidOpen:(SRWebSocket *)webSocket{
     NSLog(@"connected to websocket");
     self.synchronWSConnect = FALSE;
+    
+    [self.encoder open];
+    [self.decoder open];
 }
 
 - (void)webSocket:(SRWebSocket *)webSocket didFailWithError:(NSError *)error{
