@@ -62,7 +62,6 @@ typedef enum {
 - (id)initWithWebSocket:(SRWebSocket *)webSocket
                 runLoop:(NSRunLoop*)runLoop
             runLoopMode:(NSString*)mode;
-- (void)open;
 - (void)close;
 - (void)stream:(NSStream *)sender handleEvent:(NSStreamEvent)eventCode;
 - (void)decodeMessage:(NSData *)data;
