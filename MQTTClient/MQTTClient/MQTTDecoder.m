@@ -25,6 +25,10 @@
 #define DEBUGDEC FALSE
 #endif
 
+@interface MQTTDecoder()
+@property (nonatomic) NSMutableArray* streams;
+@end
+
 @implementation MQTTDecoder
 
 - (id)initWithWebSocket:(SRWebSocket *)webSocket
@@ -34,32 +38,34 @@
     self.runLoop = runLoop;
     self.runLoopMode = mode;
     self.websocket = webSocket;
+    self.streams = [NSMutableArray arrayWithCapacity:5];
     return self;
 }
 
-- (void)open {
-    if(self.stream!=nil){
-        [self.stream setDelegate:self];
-        [self.stream scheduleInRunLoop:self.runLoop forMode:self.runLoopMode];
-        [self.stream open];
-    }
+- (void)openStream:(NSInputStream*)stream {
+    [stream setDelegate:self];
+    [stream scheduleInRunLoop:self.runLoop forMode:self.runLoopMode];
+    [stream open];
+    [self.streams addObject:stream];
 }
 
 - (void)close {
-    if(self.stream!=nil){
-        [self.stream close];
-        [self.stream removeFromRunLoop:self.runLoop forMode:self.runLoopMode];
-        [self.stream setDelegate:nil];
+    for(NSInputStream* stream in self.streams){
+        [stream close];
+        [stream removeFromRunLoop:self.runLoop forMode:self.runLoopMode];
+        [stream setDelegate:nil];
     }
+    [self.streams removeAllObjects];
 }
 
 - (void)stream:(NSStream*)sender handleEvent:(NSStreamEvent)eventCode {
     if (DEBUGDEC) NSLog(@"%@ handleEvent 0x%02lx", self, (long)eventCode);
-    if(self.stream == nil) {
+    NSInputStream* stream = (NSInputStream*)sender;
+    NSAssert(stream, @"Must not be nil");
+    if(stream == nil) {
         if (DEBUGDEC) NSLog(@"%@ self.stream == nil", self);
         return;
     }
-    assert(sender == self.stream);
     switch (eventCode) {
         case NSStreamEventOpenCompleted:
             self.status = MQTTDecoderStatusDecodingHeader;
@@ -67,11 +73,11 @@
         case NSStreamEventHasBytesAvailable:
             if (self.status == MQTTDecoderStatusDecodingHeader) {
                 UInt8 buffer;
-                NSInteger n = [self.stream read:&buffer maxLength:1];
+                NSInteger n = [stream read:&buffer maxLength:1];
                 self.header = buffer;
                 if (n == -1) {
                     self.status = MQTTDecoderStatusConnectionError;
-                    [self.delegate decoder:self handleEvent:MQTTDecoderEventConnectionError error:self.stream.streamError];
+                    [self.delegate decoder:self handleEvent:MQTTDecoderEventConnectionError error:stream.streamError];
                 } else if (n == 1) {
                     self.length = 0;
                     self.lengthMultiplier = 1;
@@ -80,10 +86,10 @@
             }
             while (self.status == MQTTDecoderStatusDecodingLength) {
                 UInt8 digit;
-                NSInteger n = [self.stream read:&digit maxLength:1];
+                NSInteger n = [stream read:&digit maxLength:1];
                 if (n == -1) {
                     self.status = MQTTDecoderStatusConnectionError;
-                    [self.delegate decoder:self handleEvent:MQTTDecoderEventConnectionError error:self.stream.streamError];
+                    [self.delegate decoder:self handleEvent:MQTTDecoderEventConnectionError error:stream.streamError];
                     break;
                 } else if (n == 0) {
                     break;
@@ -104,10 +110,10 @@
                     if (toRead > sizeof buffer) {
                         toRead = sizeof buffer;
                     }
-                    n = [self.stream read:buffer maxLength:toRead];
+                    n = [stream read:buffer maxLength:toRead];
                     if (n == -1) {
                         self.status = MQTTDecoderStatusConnectionError;
-                        [self.delegate decoder:self handleEvent:MQTTDecoderEventConnectionError error:self.stream.streamError];
+                        [self.delegate decoder:self handleEvent:MQTTDecoderEventConnectionError error:stream.streamError];
                     } else {
                         [self.dataBuffer appendBytes:buffer length:n];
                     }
@@ -137,6 +143,7 @@
                     [self.delegate decoder:self newMessage:msg];
                     self.dataBuffer = NULL;
                     self.status = MQTTDecoderStatusDecodingHeader;
+                    [self.streams removeObject:stream];
                 }
             }
             break;
@@ -147,8 +154,9 @@
         case NSStreamEventErrorOccurred:
         {
             self.status = MQTTDecoderStatusConnectionError;
-            NSError *error = [self.stream streamError];
+            NSError *error = [stream streamError];
             [self.delegate decoder:self handleEvent:MQTTDecoderEventConnectionError error:error];
+            [self.streams removeObject:stream];
             break;
         }
         default:
@@ -158,14 +166,8 @@
 }
 
 - (void) decodeMessage : (NSData *) data{
-    if(self.stream != nil){
-        [self.stream setDelegate:nil];
-        [self.stream removeFromRunLoop:self.runLoop forMode:self.runLoopMode];
-        [self.stream close];
-        self.stream = nil;
-    }
-    self.stream = [NSInputStream inputStreamWithData:data];
-    [self open];
+    NSInputStream* stream = [NSInputStream inputStreamWithData:data];
+    [self openStream:stream];
 }
 
 @end

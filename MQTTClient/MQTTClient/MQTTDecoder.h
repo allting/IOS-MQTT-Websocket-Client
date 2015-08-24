@@ -49,7 +49,6 @@ typedef enum {
 
 @interface MQTTDecoder : NSObject <NSStreamDelegate>
 @property (nonatomic)    MQTTDecoderStatus       status;
-@property (strong, nonatomic)    NSInputStream*  stream;
 @property (strong, nonatomic)    NSRunLoop*      runLoop;
 @property (strong, nonatomic)    NSString*       runLoopMode;
 @property (nonatomic)    UInt8           header;

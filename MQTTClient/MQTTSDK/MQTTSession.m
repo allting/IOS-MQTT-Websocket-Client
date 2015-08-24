@@ -272,7 +272,6 @@
     [decoder setDelegate:self];
     
     [encoder open];
-    [decoder open];
 }
 
 

@@ -1343,7 +1343,6 @@
     self.synchronWSConnect = FALSE;
     
     [self.encoder open];
-    [self.decoder open];
 }
 
 - (void)webSocket:(SRWebSocket *)webSocket didFailWithError:(NSError *)error{
